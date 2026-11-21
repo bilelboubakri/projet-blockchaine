@@ -162,36 +162,4 @@ npm run compile
 
 ---
 
-## 7. Préparation à la Soutenance : 10 Questions / Réponses Clés pour le Jury
 
-#### Q1. Pourquoi avoir choisi Ethereum et la Blockchain pour vérifier des diplômes ?
-> **R :** Contrairement à une base de données centralisée SQL qui peut être piratée, modifiée par un administrateur malveillant ou indisponible suite à une panne de serveur, la blockchain offre trois garanties fondamentales : l'**immuabilité** (une fois écrit, le hash ne peut plus être altéré), la **décentralisation** (le registre fonctionne 24h/24 sans serveur central) et la **transparence** (n'importe qui peut vérifier sans tiers de confiance).
-
-#### Q2. Que se passe-t-il si un étudiant modifie sa note sur le PDF avec Photoshop ?
-> **R :** Grâce à l'effet avalanche de la fonction SHA-256, la moindre altération d'un seul octet ou pixel dans le PDF change totalement l'empreinte calculée par le navigateur. Lors de l'interrogation du contrat, la fonction `verifierDiplome` répondra `existe = false`, signalant immédiatement une falsification.
-
-#### Q3. Pourquoi le recruteur n'a-t-il pas besoin de MetaMask ?
-> **R :** Dans Ethereum, les fonctions déclarées `view` (comme `verifierDiplome`) ne modifient pas l'état du contrat. Elles peuvent être lues gratuitement via un fournisseur JSON-RPC public (comme `rpc.sepolia.org` ou Infura/Alchemy) sans signature cryptographique et sans dépense d'Ether.
-
-#### Q4. Qu'est-ce que le rôle `onlyOwner` dans le contrat ?
-> **R :** C'est un modificateur de contrôle d'accès en Solidity. Lors du déploiement, `owner` reçoit l'adresse de l'université. Les fonctions critiques (`emettreDiplome` et `revoquerDiplome`) vérifient `require(msg.sender == owner)`. Si un pirate tente d'appeler ces fonctions, la Machine Virtuelle Ethereum (EVM) rejette la transaction avec un `revert`.
-
-#### Q5. Pourquoi utiliser IPFS en complément de la Blockchain ?
-> **R :** La blockchain Ethereum est optimisée pour stocker des états légers (des hashes de 32 octets), tandis qu'IPFS est un système de fichiers décentralisé pair-à-pair optimisé pour les documents lourds. IPFS utilise le *Content Addressing* (adressage par contenu / CID) : l'adresse du fichier dépend directement de son contenu, garantissant qu'il n'a pas été remplacé.
-
-#### Q6. Quelle est la différence entre révoquer un diplôme et le supprimer de la blockchain ?
-> **R :** Sur une blockchain, la suppression physique d'un bloc ou d'une transaction historique est impossible par conception. Pour révoquer un diplôme (en cas de fraude décelée après coup), nous passons le booléen `valide` à `false` via `revoquerDiplome`. L'historique d'émission reste visible, mais tout vérificateur saura que le titre a été invalidé légalement.
-
-#### Q7. Comment gérez-vous la protection de la vie privée (RGPD) ?
-> **R :** Seul le hash mathématique (empreinte unidirectionnelle) et le CID IPFS sont liés dans le registre. Aucune donnée personnelle non chiffrée n'est stockée dans des blocs sans lien avec le fichier physique que seul le diplômé détient.
-
-#### Q8. Comment le Front-End communique-t-il avec la Blockchain ?
-> **R :** Nous utilisons la bibliothèque `ethers.js` (version 6). 
-> * Pour l'écriture (Admin) : `new ethers.BrowserProvider(window.ethereum)` capture la connexion MetaMask pour obtenir un `Signer` et signer les transactions.
-> * Pour la lecture (Public) : `new ethers.JsonRpcProvider(rpcUrl)` se connecte directement au réseau Ethereum sans intervention de l'utilisateur.
-
-#### Q9. Que se passe-t-il si deux diplômes ont le même hash ?
-> **R :** L'algorithme SHA-256 génère $2^{256}$ combinaisons possibles (soit environ $10^{77}$). La probabilité qu'une collision survienne par hasard est infinitésimale (plus faible que de trouver deux grains de sable identiques sur Terre). De plus, notre contrat vérifie `require(!diplomes[_hashPdf].existe)` pour interdire tout doublon.
-
-#### Q10. Comment votre solution s'adapterait-elle à grande échelle ?
-> **R :** Pour limiter les coûts de transaction (gas) à très grande échelle, l'université peut soit déployer sur un Layer 2 Ethereum (Polygon Amoy, Arbitrum, Optimism) où les frais sont quasi nuls, soit utiliser un arbre de Merkle (*Merkle Tree*) pour ancrer une promotion entière de 10 000 étudiants avec une seule transaction racine sur le réseau principal.
